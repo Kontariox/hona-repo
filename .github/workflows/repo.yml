@@ -7,24 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # możemy zostawić Ubuntu, ale użyjemy Dockera
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Install archlinux tools
-        run: sudo apt-get update && sudo apt-get install -y archlinux-keyring arch-install-scripts
-
-      - name: Refresh pacman repo database
+      - name: Setup Arch Linux container
         run: |
+          docker run --rm -v $PWD:/repo -w /repo archlinux:latest /bin/bash -c "
+          pacman -Sy --noconfirm pacman
+          pacman -S --noconfirm arch-install-scripts
           cd x86_64
           rm -f *.db *.db.tar.gz *.files *.files.tar.gz
           repo-add hona-repo.db.tar.gz *.pkg.tar.zst
-
-      - name: Commit updated repo files
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add x86_64/*.db* x86_64/*.files*
-          git commit -m "Auto-update repo db" || echo "No changes"
-          git push
+          "
