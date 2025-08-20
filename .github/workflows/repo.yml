@@ -1,0 +1,30 @@
+name: Update pacman repo
+
+on:
+  push:
+    paths:
+      - "x86_64/**"   # tylko gdy coś się zmienia w katalogu z paczkami
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install archlinux tools
+        run: sudo apt-get update && sudo apt-get install -y archlinux-keyring arch-install-scripts
+
+      - name: Refresh pacman repo database
+        run: |
+          cd x86_64
+          rm -f *.db *.db.tar.gz *.files *.files.tar.gz
+          repo-add hona-repo.db.tar.gz *.pkg.tar.zst
+
+      - name: Commit updated repo files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add x86_64/*.db* x86_64/*.files*
+          git commit -m "Auto-update repo db" || echo "No changes"
+          git push
